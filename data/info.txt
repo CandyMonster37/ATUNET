@@ -1,0 +1,9 @@
+· 使用2022江苏气象AI算法挑战赛-AI助力强对流天气预报的数据，不便公开，在此仅给出目录结构
+·详见https://tianchi.aliyun.com/competition/entrance/531962/information
+
+·以下为简要说明：
+·Train.csv和TestA.csv中每一格代表一个文件的名字
+
+·Train为训练集
+·TestA为验证集
+·TestB为测试集
