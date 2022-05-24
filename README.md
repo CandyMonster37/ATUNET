@@ -1,10 +1,3 @@
----
-tags: [Import-0356]
-title: ATUNET
-created: '2022-05-22T12:10:43.725Z'
-modified: '2022-05-24T06:41:33.852Z'
----
-
 # ATUNET
 My net for weather forecast in TIANCHI test. <p>
 The main idea is use UNET and Attention Mechanism.<p>
