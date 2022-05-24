@@ -93,14 +93,16 @@ def batch_generator(input_img_paths: list,
 
 
 if __name__ == '__main__':
-    test = '../data/TestA/Radar/radar_31218.png'
-    img = image_read(test, data_type='Radar')
+    test = '../data/TestA/Precip/Precip_31218.png'
+    img = image_read(test, data_type='Precip')
     print(img)
+    print(np.any(img < 0))
     print(img.shape)
     dirs = '../data/Train'
     mod = 'Radar'
     id_file = '../data/Train.csv'
     input_imgnames, output_imgnames = proc_img_name(target_dir=dirs, mode=mod, idx_file=id_file, test=False)
     my_generator = batch_generator(input_imgnames, output_imgnames,
-                                   data_type='Radar', batch_size=32, test_set=False)
-    print(next(my_generator)[0].shape)
+                                   data_type='Radar', batch_size=2, test_set=False)
+    print(next(my_generator)[0].shape)  # (batch, 20, h, w)
+

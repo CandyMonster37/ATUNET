@@ -90,11 +90,12 @@ class Net(keras.Model):
 
         self.sigmoid = tf.nn.sigmoid
 
-    def call(self, inputs):
+    def call(self, inputs, training=None):
         # inputs: (b, 20, 480, 560, 1)
 
         # downscale 1
-        conv1 = self.layer1_conv.call(inputs)
+        conv1 = self.layer1_conv(inputs)
+        conv1 = tf.reshape(conv1, (-1, self.seq, conv1.shape[-3], conv1.shape[-2], conv1.shape[-1]))
         # conv1: (b, 20, 476, 556, 32), saved as residual
         conv1_reshape = tf.reshape(conv1, (-1, conv1.shape[-3], conv1.shape[-2], conv1.shape[-1]))
         pool1 = layers.AveragePooling2D(pool_size=(2, 2), input_shape=conv1_reshape.shape[2:-1])
@@ -105,7 +106,7 @@ class Net(keras.Model):
         # conv_pool_1: (b, 20, 238, 278, 32)
 
         # downscale 2
-        conv2 = self.layer2_conv.call(conv_pool_1)
+        conv2 = self.layer2_conv(conv_pool_1)
         # conv2: (b, 20, 234, 274, 64), saved as residual
         del conv_pool_1
         conv2_reshape = tf.reshape(conv2, (-1, conv2.shape[-3], conv2.shape[-2], conv2.shape[-1]))
@@ -117,7 +118,7 @@ class Net(keras.Model):
         # conv_pool_2: (b, 20, 117, 137, 64)
 
         # downscale 3
-        conv3 = self.layer3_conv.call(conv_pool_2)
+        conv3 = self.layer3_conv(conv_pool_2)
         # conv3: (1, 20, 113, 133, 128), saved as residual
         del conv_pool_2
         conv3_reshape = tf.reshape(conv3, (-1, conv3.shape[-3], conv3.shape[-2], conv3.shape[-1]))
@@ -129,7 +130,7 @@ class Net(keras.Model):
         # conv_pool_3: (1, 20, 56, 66, 128)
 
         # downscale 4
-        conv4 = self.layer4_conv.call(conv_pool_3)
+        conv4 = self.layer4_conv(conv_pool_3)
         # conv4: (1, 20, 52, 62, 256), saved as residual
         del conv_pool_3
         conv4_reshape = tf.reshape(conv4, (-1, conv4.shape[-3], conv4.shape[-2], conv4.shape[-1]))
@@ -141,7 +142,7 @@ class Net(keras.Model):
         # conv_pool_4: (1, 20, 26, 31, 256)
 
         # conv and attention at bottom
-        conv5 = self.layer5_conv.call(conv_pool_4)
+        conv5 = self.layer5_conv(conv_pool_4)
         # conv5: (1, 20, 22, 27, 512)
         del conv_pool_4
         conv5 = self.atten5(conv5, conv5)
@@ -149,9 +150,9 @@ class Net(keras.Model):
 
         # upscale, attention 4
         conv5 = tf.reshape(conv5, (-1, conv5.shape[-3], conv5.shape[-2], conv5.shape[-1]))
-        conv5 = self.deconv1_1.call(conv5)  # (20, 24, 29, 256)
-        conv5 = self.deconv1_2.call(conv5)  # (20, 26, 31, 256)
-        conv5 = self.deconv1_3.call(conv5)  # (20, 53, 63, 256)
+        conv5 = self.deconv1_1(conv5)  # (20, 24, 29, 256)
+        conv5 = self.deconv1_2(conv5)  # (20, 26, 31, 256)
+        conv5 = self.deconv1_3(conv5)  # (20, 53, 63, 256)
         conv5 = tf.reshape(conv5, (-1, self.seq, conv5.shape[-3], conv5.shape[-2], conv5.shape[-1]))
         conv5 = self.deconv1_conv1(conv5)  # (1, 20, 52, 62, 256)
         conv5 = tf.concat([conv5, conv4], axis=-1)
@@ -162,20 +163,21 @@ class Net(keras.Model):
 
         # upscale, attention 3
         up_atten4 = tf.reshape(up_atten4, (-1, up_atten4.shape[-3], up_atten4.shape[-2], up_atten4.shape[-1]))
-        up_atten4 = self.deconv2_1.call(up_atten4)  # (20, 54, 64, 128)
-        up_atten4 = self.deconv2_2.call(up_atten4)  # (20, 56, 66, 128)
-        up_atten4 = self.deconv2_3.call(up_atten4)  # (20, 113, 133, 128)
+        up_atten4 = self.deconv2_1(up_atten4)  # (20, 54, 64, 128)
+        up_atten4 = self.deconv2_2(up_atten4)  # (20, 56, 66, 128)
+        up_atten4 = self.deconv2_3(up_atten4)  # (20, 113, 133, 128)
         up_atten4 = tf.reshape(up_atten4, (-1, self.seq, up_atten4.shape[-3], up_atten4.shape[-2], up_atten4.shape[-1]))
         up_atten4 = tf.concat([up_atten4, conv3], axis=-1)
         del conv3
+        up_atten4 = self.deconv2_conv(up_atten4)
         up_atten3 = self.atten3(up_atten4, up_atten4)  # (1, 20, 113, 133, 128)
         del up_atten4
 
         # upscale, attention 2
         up_atten3 = tf.reshape(up_atten3, (-1, up_atten3.shape[-3], up_atten3.shape[-2], up_atten3.shape[-1]))
-        up_atten3 = self.deconv3_1.call(up_atten3)  # (20, 115, 135, 64)
-        up_atten3 = self.deconv3_2.call(up_atten3)  # (20, 117, 137, 64)
-        up_atten3 = self.deconv3_3.call(up_atten3)  # (20, 235, 275, 64)
+        up_atten3 = self.deconv3_1(up_atten3)  # (20, 115, 135, 64)
+        up_atten3 = self.deconv3_2(up_atten3)  # (20, 117, 137, 64)
+        up_atten3 = self.deconv3_3(up_atten3)  # (20, 235, 275, 64)
         up_atten3 = tf.reshape(up_atten3, (-1, self.seq, up_atten3.shape[-3], up_atten3.shape[-2], up_atten3.shape[-1]))
         up_atten3 = self.deconv3_conv1(up_atten3)  # (1, 20, 234, 274, 64)
         up_atten3 = tf.concat([up_atten3, conv2], axis=-1)
@@ -186,9 +188,9 @@ class Net(keras.Model):
 
         # upscale, attention 1
         up_atten2 = tf.reshape(up_atten2, (-1, up_atten2.shape[-3], up_atten2.shape[-2], up_atten2.shape[-1]))
-        up_atten2 = self.deconv4_1.call(up_atten2)  # (20, 236, 276, 32)
-        up_atten2 = self.deconv4_2.call(up_atten2)  # (20, 238, 278, 32)
-        up_atten2 = self.deconv4_3.call(up_atten2)  # (20, 477, 557, 32)
+        up_atten2 = self.deconv4_1(up_atten2)  # (20, 236, 276, 32)
+        up_atten2 = self.deconv4_2(up_atten2)  # (20, 238, 278, 32)
+        up_atten2 = self.deconv4_3(up_atten2)  # (20, 477, 557, 32)
         up_atten2 = tf.reshape(up_atten2, (-1, self.seq, up_atten2.shape[-3], up_atten2.shape[-2], up_atten2.shape[-1]))
         up_atten2 = self.deconv4_conv1(up_atten2)  # (1, 20, 476, 556, 32)
         up_atten2 = tf.concat([up_atten2, conv1], axis=-1)
@@ -199,8 +201,8 @@ class Net(keras.Model):
 
         # convt, prepare to output
         output = tf.reshape(up_atten1, (-1, up_atten1.shape[-3], up_atten1.shape[-2], up_atten1.shape[-1]))
-        output = self.deconv5_1.call(output)  # (20, 478, 558, 16)
-        output = self.deconv5_2.call(output)  # (20, 480, 560, 8)
+        output = self.deconv5_1(output)  # (20, 478, 558, 16)
+        output = self.deconv5_2(output)  # (20, 480, 560, 8)
         output = self.deconv5_conv(output)  # (20, 480, 560, 1)
         output = tf.reshape(output, (-1, self.seq, output.shape[-3], output.shape[-2]))  # (1, 20, 480, 560)
         output = self.sigmoid(output)
@@ -211,19 +213,32 @@ class Net(keras.Model):
 if __name__ == '__main__':
     # os.environ["CUDA_VISIBLE_DEVICES"] = "/gpu:0"
     import numpy as np
+    import sys
+    import os
 
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
     session = tf.compat.v1.InteractiveSession(config=config)
 
-    inputs_x = np.random.random((1, 1, 480, 560, 1))
+    inputs_x = np.random.random((1, 20, 480, 560, 1))
     inputs_x = tf.convert_to_tensor(inputs_x)
+    print('input:', inputs_x.shape)
     # inputs = tf.keras.Input(shape=inputs_x.shape)
 
-    model = Net(head_nums=1, seq=1)
-    # model.build(input_shape=x.shape)
-    output = model.call(inputs_x)
-    print(output.shape)
+    model = Net(head_nums=1, seq=20)
+
+    model(tf.keras.Input(shape=inputs_x.shape, batch_size=1))
+    model.summary()
+    if not os.path.exists('./output'):
+        os.mkdir('./output')
+    orig_stdout = sys.stdout
+    f = open('./output/model_summary.txt', 'w')
+    sys.stdout = f
+    print(model.summary())
+    sys.stdout = orig_stdout
+    f.close()
+    # output = model.call(inputs_x)
+    # print(output.shape)
 
     # # tf.debugging.set_log_device_placement(True)
     # net1 = deconv2d_bn(out_channels=16, strides=(1, 1))
