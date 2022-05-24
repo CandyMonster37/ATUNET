@@ -1,3 +1,10 @@
+---
+tags: [Import-0356]
+title: ATUNET
+created: '2022-05-22T12:10:43.725Z'
+modified: '2022-05-24T06:41:33.852Z'
+---
+
 # ATUNET
 My net for weather forecast in TIANCHI test. <p>
 The main idea is use UNET and Attention Mechanism.<p>
@@ -11,9 +18,12 @@ after each upscaling, as well as attention if OOM doesn't appear.
 ## some infos
 The shape of the input data will be `(batch_size, seq, h, w)`, where `seq` denotes the sequence length(here `seq=20`).<p>
 Then it will be reshaped to `(batch_size, seq, h, w, channels)` by adding a dim at the last axis.<p>
-So the shape of the actual data received by the `model` is `(batch_size, seq, h, w, 1)`.
-And the shape of th output is `(batch_size, seq, h, w)`
+So the shape of the actual data received by the `model` is `(batch_size, seq, h, w, 1)`.<p>
+And the shape of th output is `(batch_size, seq, h, w)` <p>
+Use early-stop and AdamWarmup.<p>
+Use dice_coef as the loss function. <p>
 ## TODO
-1. train.py and predict.py
-2. metric.py
-3. save the results as image
+1. examzine train.py
+2. predict.py
+3. metric.py
+4. save the results as image
