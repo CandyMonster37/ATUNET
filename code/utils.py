@@ -29,7 +29,7 @@ def image_write(image, write_path='./Radar/', data_type='Radar'):
     imwrite(write_path, image)
 
 
-def proc_img_name(target_dir='../data/Train', mode='Radar', idx_file='../data/Train.csv', test=False):
+def proc_img_name(target_dir='../data/Train', mode='Radar', idx_file='../data/Train.csv', istest=False):
     input_imgs = []
     output_imgs = [] if not test else None
     idx_loader = pd.read_csv(idx_file, header=None)
@@ -41,7 +41,7 @@ def proc_img_name(target_dir='../data/Train', mode='Radar', idx_file='../data/Tr
             img_name = os.path.join(target_dir, mode, mode.lower() + '_' + image_idx)
             cont_seq.append(img_name)
         input_imgs.append(cont_seq)
-    if not test:
+    if not istest:
         outputs_idx = idx_loader.iloc[:, 20:]
         outputs_idx = np.array(outputs_idx).tolist()
         for seq in outputs_idx:
@@ -58,13 +58,13 @@ def batch_generator(input_img_paths: list,
                     output_img_paths=None,
                     data_type='Radar',
                     batch_size=128,
-                    test_set=False):
+                    istest_set=False):
     """
     :param input_img_paths: [[path, path, ...], ...], (len, 20)
     :param output_img_paths: None if use test data; else [[path, path, ...], ...]. (len, 20)
     :param data_type: 'Radar' or 'Wind' or 'Precip'
     :param batch_size: 2 ^ n
-    :param test_set: True if use test data; else False
+    :param istest_set: True if use test data; else False
     :return:
     """
     inputs_batch = []
@@ -77,7 +77,7 @@ def batch_generator(input_img_paths: list,
             img_data = image_read(image, data_type=data_type).tolist()
             one_seq_in.append(img_data)
         inputs_batch.append(one_seq_in)
-        if not test_set:
+        if not istest_set:
             # 只要不是测试集数据
             for image in output_img_paths[i]:
                 img_data = image_read(image, data_type=data_type).tolist()
@@ -101,8 +101,8 @@ if __name__ == '__main__':
     dirs = '../data/Train'
     mod = 'Radar'
     id_file = '../data/Train.csv'
-    input_imgnames, output_imgnames = proc_img_name(target_dir=dirs, mode=mod, idx_file=id_file, test=False)
+    input_imgnames, output_imgnames = proc_img_name(target_dir=dirs, mode=mod, idx_file=id_file, istest=False)
     my_generator = batch_generator(input_imgnames, output_imgnames,
-                                   data_type='Radar', batch_size=2, test_set=False)
+                                   data_type='Radar', batch_size=2, istest_set=False)
     print(next(my_generator)[0].shape)  # (batch, 20, h, w)
 

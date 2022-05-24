@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras import backend as K
 
 
 class double_conv2d_bn(keras.Model):
@@ -35,9 +36,9 @@ class deconv2d_bn(keras.Model):
         return out
 
 
-class Net(keras.Model):
+class ATUNET(keras.Model):
     def __init__(self, head_nums=6, seq=20):
-        super(Net, self).__init__()
+        super(ATUNET, self).__init__()
         self.seq = seq
 
         # downscale for 4 times
@@ -209,6 +210,31 @@ class Net(keras.Model):
         return output
 
 
+# 损失函数loss
+class dice_coef(tf.keras.losses.Loss):
+    def __init__(self, smooth=1.):
+        super(dice_coef, self).__init__()
+        self.smooth = smooth
+
+    def calc_dice_coef(self, y_true, y_pred):
+        # y_pred/p_true shape: (b, seq, 480, 560)
+        y_true_f = tf.reshape(y_true, (-1, y_true.shape[1] * y_true.shape[2] * y_true.shape[3]))
+        y_pred_f = tf.reshape(y_pred, (-1, y_pred.shape[1] * y_pred.shape[2] * y_pred.shape[3]))
+        intersection = K.sum(y_true_f * y_pred_f)
+        print('y_true_f', y_true_f.shape)
+        print('intersection', intersection)
+        res = (2.*intersection + self.smooth) / (K.sum(y_true_f * y_true_f) + K.sum(y_pred_f * y_pred_f) + self.smooth)
+        return res
+
+    def dice_coef_loss(self, y_true, y_pred):
+        res = 1. - self.calc_dice_coef(y_true, y_pred)
+        return round(float(res), 5)
+
+    def call(self, y_true, y_pred):
+        res = self.dice_coef_loss(y_true, y_pred)
+        return res
+
+
 if __name__ == '__main__':
     import numpy as np
     import sys
@@ -227,7 +253,7 @@ if __name__ == '__main__':
     print()
     # inputs = tf.keras.Input(shape=inputs_x.shape)
 
-    model = Net(head_nums=4, seq=20)
+    model = ATUNET(head_nums=4, seq=20)
 
     save_summary = True
     if save_summary:
@@ -245,62 +271,3 @@ if __name__ == '__main__':
     output = model(inputs_x)
     print('\n\ninput:', inputs_x.shape, 'output:', output.shape, '\n\n')
 
-
-    # # tf.debugging.set_log_device_placement(True)
-    # net1 = deconv2d_bn(out_channels=16, strides=(1, 1))
-    # net2 = deconv2d_bn(out_channels=8, strides=(1, 1))
-    # # net3 = deconv2d_bn(out_channels=32, strides=(2, 2))
-    #
-    # x = tf.random.normal((1, 10, 476, 556, 32))
-    # # c3 = tf.random.normal((1, 10, 476, 556, 32))
-    # print('x', x.shape)
-    # x = tf.reshape(x, (-1, x.shape[-3], x.shape[-2], x.shape[-1]))
-    # new_x = net1.call(x)
-    # print('convT1 x', new_x.shape)
-    # del x
-    # new_x = net2.call(new_x)
-    # print('convT2 x', new_x.shape)
-    # # new_x = net3.call(new_x)
-    # # print('convT3 x', new_x.shape)
-    #
-    # conv = layers.Conv2D(filters=1, kernel_size=1)
-    # new_x = conv(new_x)
-    # print('final conv', new_x.shape)
-    #
-    # new_x = tf.reshape(new_x, (-1, 10, new_x.shape[-3], new_x.shape[-2]))
-    # print('reshaped:', new_x.shape)
-    #
-    # # sg = keras.activations.sigmoid
-    # sg = tf.nn.sigmoid
-    # new_x = sg(new_x)
-    # print('sigmoid', new_x.shape)
-    #
-    # # net4 = layers.Conv2D(filters=32, kernel_size=2)
-    # # new_x = net4(new_x)
-    # # print('conv4 x', new_x.shape)
-    #
-    # # added = tf.concat([new_x, c3], axis=-1)
-    # # print('added x:', added.shape)
-    #
-    # # net5 = layers.Conv2D(filters=32, kernel_size=1)
-    # # new_x = net5(added)
-    # # print('conv5 x', new_x.shape)
-
-    # bn1 = layers.BatchNormalization()
-    # bnx = bn1(new_x)
-    # del new_x
-    # print('bn x', bnx.shape)
-    # out = tf.nn.relu(bnx)
-    # del bnx
-    # print('relu', out.shape)
-    # out = tf.reshape(out, (-1, out.shape[-3], out.shape[-2], out.shape[-1]))
-    # pool = layers.AveragePooling2D(pool_size=(2, 2), input_shape=out.shape[2:-1])
-    # op = pool(out)
-    # del out
-    # op = tf.reshape(op, (-1, 20, op.shape[-3], op.shape[-2], op.shape[-1]))
-    # print('pool 2d', op.shape)
-    # x = tf.random.normal((16, 20, 28, 28, 1024))
-    # print(x.shape)
-    # att = layers.MultiHeadAttention(num_heads=2, key_dim=2, attention_axes=(1, 2))
-    # new_x = att(x, x)
-    # print(new_x.shape)
