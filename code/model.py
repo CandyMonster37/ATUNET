@@ -95,7 +95,6 @@ class Net(keras.Model):
 
         # downscale 1
         conv1 = self.layer1_conv(inputs)
-        conv1 = tf.reshape(conv1, (-1, self.seq, conv1.shape[-3], conv1.shape[-2], conv1.shape[-1]))
         # conv1: (b, 20, 476, 556, 32), saved as residual
         conv1_reshape = tf.reshape(conv1, (-1, conv1.shape[-3], conv1.shape[-2], conv1.shape[-1]))
         pool1 = layers.AveragePooling2D(pool_size=(2, 2), input_shape=conv1_reshape.shape[2:-1])
@@ -157,8 +156,8 @@ class Net(keras.Model):
         conv5 = self.deconv1_conv1(conv5)  # (1, 20, 52, 62, 256)
         conv5 = tf.concat([conv5, conv4], axis=-1)
         del conv4
-        conv5 = self.deconv1_conv2(conv5)
-        up_atten4 = self.atten4(conv5, conv5)  # (1, 20, 52, 62, 256)
+        up_atten4 = self.deconv1_conv2(conv5)
+        # up_atten4 = self.atten4(up_atten4, up_atten4)  # (1, 20, 52, 62, 256)
         del conv5
 
         # upscale, attention 3
@@ -169,8 +168,8 @@ class Net(keras.Model):
         up_atten4 = tf.reshape(up_atten4, (-1, self.seq, up_atten4.shape[-3], up_atten4.shape[-2], up_atten4.shape[-1]))
         up_atten4 = tf.concat([up_atten4, conv3], axis=-1)
         del conv3
-        up_atten4 = self.deconv2_conv(up_atten4)
-        up_atten3 = self.atten3(up_atten4, up_atten4)  # (1, 20, 113, 133, 128)
+        up_atten3 = self.deconv2_conv(up_atten4)
+        # up_atten3 = self.atten3(up_atten3, up_atten3)  # (1, 20, 113, 133, 128)
         del up_atten4
 
         # upscale, attention 2
@@ -182,8 +181,8 @@ class Net(keras.Model):
         up_atten3 = self.deconv3_conv1(up_atten3)  # (1, 20, 234, 274, 64)
         up_atten3 = tf.concat([up_atten3, conv2], axis=-1)
         del conv2
-        up_atten3 = self.deconv3_conv2(up_atten3)
-        up_atten2 = self.atten2(up_atten3, up_atten3)  # (1, 20, 234, 274, 64)
+        up_atten2 = self.deconv3_conv2(up_atten3)
+        # up_atten2 = self.atten2(up_atten2, up_atten2)  # (1, 20, 234, 274, 64)
         del up_atten3
 
         # upscale, attention 1
@@ -194,9 +193,9 @@ class Net(keras.Model):
         up_atten2 = tf.reshape(up_atten2, (-1, self.seq, up_atten2.shape[-3], up_atten2.shape[-2], up_atten2.shape[-1]))
         up_atten2 = self.deconv4_conv1(up_atten2)  # (1, 20, 476, 556, 32)
         up_atten2 = tf.concat([up_atten2, conv1], axis=-1)
-        del conv2
-        up_atten2 = self.deconv4_conv2(up_atten2)
-        up_atten1 = self.atten1(up_atten2, up_atten2)  # (1, 20, 476, 556, 32)
+        del conv1
+        up_atten1 = self.deconv4_conv2(up_atten2)
+        # up_atten1 = self.atten1(up_atten1, up_atten1)  # (1, 20, 476, 556, 32)
         del up_atten2
 
         # convt, prepare to output
@@ -211,34 +210,41 @@ class Net(keras.Model):
 
 
 if __name__ == '__main__':
-    # os.environ["CUDA_VISIBLE_DEVICES"] = "/gpu:0"
     import numpy as np
     import sys
     import os
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.allow_growth = True
     session = tf.compat.v1.InteractiveSession(config=config)
 
-    inputs_x = np.random.random((1, 20, 480, 560, 1))
+    batch_size = 4
+
+    inputs_x = np.random.random((batch_size, 20, 480, 560, 1))
     inputs_x = tf.convert_to_tensor(inputs_x)
-    print('input:', inputs_x.shape)
+    print()
     # inputs = tf.keras.Input(shape=inputs_x.shape)
 
-    model = Net(head_nums=1, seq=20)
+    model = Net(head_nums=4, seq=20)
 
-    model(tf.keras.Input(shape=inputs_x.shape, batch_size=1))
-    model.summary()
-    if not os.path.exists('./output'):
-        os.mkdir('./output')
-    orig_stdout = sys.stdout
-    f = open('./output/model_summary.txt', 'w')
-    sys.stdout = f
-    print(model.summary())
-    sys.stdout = orig_stdout
-    f.close()
-    # output = model.call(inputs_x)
-    # print(output.shape)
+    save_summary = True
+    if save_summary:
+        model(tf.keras.Input(shape=inputs_x.shape[1:], batch_size=batch_size))
+        model.summary()
+        if not os.path.exists('./output'):
+            os.mkdir('./output')
+        orig_stdout = sys.stdout
+        f = open('./output/model_summary.txt', 'w')
+        sys.stdout = f
+        print(model.summary())
+        sys.stdout = orig_stdout
+        f.close()
+
+    output = model(inputs_x)
+    print('\n\ninput:', inputs_x.shape, 'output:', output.shape, '\n\n')
+
 
     # # tf.debugging.set_log_device_placement(True)
     # net1 = deconv2d_bn(out_channels=16, strides=(1, 1))

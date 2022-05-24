@@ -12,15 +12,15 @@ double_conv2d_bn_3 (double_c multiple                  886784
 _________________________________________________________________
 double_conv2d_bn_4 (double_c multiple                  3543040   
 _________________________________________________________________
-multi_head_attention (MultiH multiple                  425       
+multi_head_attention (MultiH multiple                  0 (unused)
 _________________________________________________________________
-multi_head_attention_1 (Mult multiple                  841       
+multi_head_attention_1 (Mult multiple                  0 (unused)
 _________________________________________________________________
-multi_head_attention_2 (Mult multiple                  1673      
+multi_head_attention_2 (Mult multiple                  0 (unused)
 _________________________________________________________________
-multi_head_attention_3 (Mult multiple                  3337      
+multi_head_attention_3 (Mult multiple                  0 (unused)
 _________________________________________________________________
-multi_head_attention_4 (Mult multiple                  6665      
+multi_head_attention_4 (Mult multiple                  25124     
 _________________________________________________________________
 deconv2d_bn (deconv2d_bn)    multiple                  1180672   
 _________________________________________________________________
@@ -66,8 +66,8 @@ conv2d_16 (Conv2D)           multiple                  2080
 _________________________________________________________________
 conv2d_17 (Conv2D)           multiple                  9         
 =================================================================
-Total params: 8,333,142
-Trainable params: 8,326,246
+Total params: 8,345,325
+Trainable params: 8,338,429
 Non-trainable params: 6,896
 _________________________________________________________________
 None
